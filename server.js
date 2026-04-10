@@ -152,6 +152,17 @@ function num(v) {
   return v == null || v === "" || isNaN(Number(v)) ? null : Number(v);
 }
 
+// ─── Brand Normalization ─────────────────────────────────────────────────────
+
+const BRAND_ALIASES = {
+  "DKNY": "DK", "DK": "DK",
+};
+
+function normBrand(b) {
+  const v = (b || "").toString().trim().toUpperCase();
+  return BRAND_ALIASES[v] || v;
+}
+
 // ─── Analysis Engine ─────────────────────────────────────────────────────────
 
 function runAnalysis(factoryRows, davidRows) {
@@ -183,29 +194,17 @@ function runAnalysis(factoryRows, davidRows) {
     matched.add(style);
     const changes = [];
 
+    // Only track changes where BOTH sides have real values (not empty→filled)
     const fU = num(f["Ship Units"]) ?? num(f["PO Units"]);
     const dU = num(d["Ship Units"]);
-    if (fU != null && dU != null && fU !== dU) changes.push({ field: "Ship Units", from: dU, to: fU });
+    if (fU != null && dU != null && fU !== dU) changes.push({ field: "Units", from: dU.toLocaleString(), to: fU.toLocaleString(), delta: fU - dU });
 
     const fE = fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]);
     const dE = fmtDate(d["ETD"]);
     if (fE && dE && fE !== dE) changes.push({ field: "ETD", from: dE, to: fE });
 
-    const fB = (f["Brand"] || "").toString().trim(), dB = (d["Brand"] || "").toString().trim();
-    if (fB && dB && fB !== dB) changes.push({ field: "Brand", from: dB, to: fB });
-
-    const fN = (f["PO NAME"] || "").toString().trim(), dN = (d["PO NAME"] || "").toString().trim();
-    if (fN && dN && fN !== dN) changes.push({ field: "PO NAME", from: dN, to: fN });
-
     const fP = (f["Production#"] || "").toString().trim(), dP = (d["Production#"] || "").toString().trim();
-    if (fP && dP && fP !== dP) changes.push({ field: "Production#", from: dP, to: fP });
-
-    const fA = fmtDate(f["ATD"]);
-    if (fA) changes.push({ field: "ATD", from: "—", to: fA });
-
-    const fSh = (f["Shipment#"] || "").toString().trim();
-    if (fSh && fSh !== "nan" && fSh !== "NaN" && fSh !== "undefined")
-      changes.push({ field: "Shipment#", from: "—", to: fSh });
+    if (fP && dP && fP !== dP) changes.push({ field: "Prod#", from: dP, to: fP });
 
     if (changes.length) {
       updates.push({
@@ -225,7 +224,7 @@ function runAnalysis(factoryRows, davidRows) {
     po: (r["PO NAME"] || "").toString(),
     style: (r["STYLE"] || "").toString(),
     units: num(r["Ship Units"]),
-    brand: (r["Brand"] || "").toString(),
+    brand: normBrand(r["Brand"]),
     etd: fmtDate(r["ETD"]),
   }));
 
@@ -247,10 +246,9 @@ function cleanRow(f, style) {
     po: (f["PO NAME"] || "").toString(),
     style,
     units: num(f["Ship Units"]) ?? num(f["PO Units"]),
-    brand: (f["Brand"] || "").toString(),
+    brand: normBrand(f["Brand"]),
     etd: fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]),
     factory: f._factory,
-  };
 }
 
 // ─── Sync Orchestrator ───────────────────────────────────────────────────────
