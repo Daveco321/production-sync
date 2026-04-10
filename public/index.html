@@ -135,6 +135,13 @@ let sortAsc = true;
 let data = null;
 let selected = new Set();
 let adding = false;
+let lastDataHash = "";
+
+function dataHash(s) {
+  if (!s || !s.analysis) return "";
+  const a = s.analysis;
+  return `${s.lastSync}|${a.newStyles.length}|${a.updates.length}|${a.missing.length}|${a.matched}`;
+}
 
 function toast(msg, type = "success") {
   const el = document.getElementById("toast-container");
@@ -146,8 +153,22 @@ async function fetchStatus() {
   try {
     const res = await fetch("/api/status");
     const s = await res.json();
-    data = s;
-    updateUI(s);
+    const hash = dataHash(s);
+    // Only update status badge on every poll, but only re-render table if data changed
+    const sb = document.getElementById("status-badge");
+    if (s.syncing) sb.innerHTML = '<span class="status"><span class="dot" style="background:#fbbf24"></span>Syncing...</span>';
+    else if (s.error) sb.innerHTML = '<span class="status" style="background:rgba(239,68,68,.15);color:#fca5a5">Error</span>';
+    else if (s.lastSync) {
+      const t = new Date(s.lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      sb.innerHTML = `<span class="status"><span class="dot"></span>Synced ${t}</span>`;
+    }
+    if (hash !== lastDataHash) {
+      data = s;
+      lastDataHash = hash;
+      if (s.analysis) renderDashboard(s.analysis, s);
+    } else {
+      data = s;
+    }
   } catch(e) { console.error(e); }
 }
 
@@ -208,6 +229,10 @@ function updateUI(s) {
 
 function renderDashboard(a, s) {
   const el = document.getElementById("content");
+  // Save scroll position
+  const scrollEl = document.querySelector(".table-scroll");
+  const scrollTop = scrollEl ? scrollEl.scrollTop : 0;
+  const scrollLeft = scrollEl ? scrollEl.scrollLeft : 0;
   const sources = ["ALL"];
   if (s.factoryCounts.FY1) sources.push("FY1");
   if (s.factoryCounts.NB) sources.push("NB");
@@ -309,6 +334,9 @@ function renderDashboard(a, s) {
     </div></div></div>`;
 
   el.innerHTML = html;
+  // Restore scroll position
+  const newScrollEl = document.querySelector(".table-scroll");
+  if (newScrollEl) { newScrollEl.scrollTop = scrollTop; newScrollEl.scrollLeft = scrollLeft; }
 }
 
 function renderChanges(r) {
