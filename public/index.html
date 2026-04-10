@@ -4,96 +4,203 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Production Sync</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#060810;--sf:#0c0f18;--cd:#111520;--rs:#161b28;--bd:#1a2035;
-  --ac:#4b8dff;--gn:#2dd4a0;--rd:#f0544f;--am:#f5a623;--cy:#22d3ee;--pr:#9d7aff;
-  --tx:#cdd5e5;--dm:#4f5b78;--ft:#1e2640;
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #e2e7f1;
+  --border-light: #eef1f8;
+  --navy: #1e2a4a;
+  --navy-light: #2d3f6b;
+  --accent: #3563e9;
+  --accent-light: #eef2ff;
+  --green: #0d9f6e;
+  --green-bg: #ecfdf5;
+  --green-border: #bbf7d0;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --red-border: #fecaca;
+  --amber: #d97706;
+  --amber-bg: #fffbeb;
+  --amber-border: #fde68a;
+  --text: #1e2a4a;
+  --text-secondary: #5b6b8a;
+  --text-dim: #8896b3;
+  --shadow: 0 1px 3px rgba(30,42,74,.06), 0 1px 2px rgba(30,42,74,.04);
+  --shadow-lg: 0 4px 12px rgba(30,42,74,.08);
 }
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--ft);border-radius:4px}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 
-.mono{font-family:'IBM Plex Mono','SF Mono','Consolas',monospace}
-.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
-.badge .dot{width:5px;height:5px;border-radius:50%;animation:pulse 2s infinite}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text-dim); }
 
-header{padding:0 24px;height:50px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd);background:var(--sf)}
-header .logo{width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--ac),var(--cy));display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
-header .title{font-size:12px;font-weight:700;letter-spacing:1.5px}
-header .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.mono { font-family:'IBM Plex Mono','SF Mono','Consolas',monospace; }
 
-.stats{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.stat{flex:1;min-width:150px;padding:14px 16px;text-align:left;cursor:pointer;border-radius:8px;border:1px solid var(--bd);background:var(--cd);transition:all .15s;position:relative;overflow:hidden}
-.stat.active{background:color-mix(in srgb,var(--stat-color) 4%,var(--cd))}
-.stat.active{border-color:color-mix(in srgb,var(--stat-color) 20%,transparent)}
-.stat .bar{position:absolute;top:0;left:0;right:0;height:2px;display:none}
-.stat.active .bar{display:block}
-.stat .num{font-size:24px;font-weight:700}
-.stat .label{font-size:11px;font-weight:600;margin-top:5px}
-.stat .sub{font-size:9px;color:var(--dm);margin-top:2px}
+/* ── Header ─────────────────────────────────────────────── */
+header {
+  padding: 0 28px; height: 56px; display: flex; align-items: center; gap: 14px;
+  background: var(--navy); color: #fff;
+}
+header .logo {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, #4f7cff, #38bdf8);
+  display: grid; place-items: center; font-size: 14px; font-weight: 800;
+}
+header .title { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; }
+header .right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+header .status {
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,.12); color: rgba(255,255,255,.85);
+}
+header .status .dot {
+  width:6px; height:6px; border-radius:50%; background:#4ade80;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+header .btn-sync {
+  padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08); color:#fff; font-size:11px; font-weight:600;
+  cursor:pointer; font-family:inherit; transition:background .15s;
+}
+header .btn-sync:hover { background:rgba(255,255,255,.15); }
 
-.toolbar{display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
-.toolbar input{flex:1;min-width:160px;padding:7px 10px;background:var(--cd);border:1px solid var(--bd);border-radius:5px;color:var(--tx);font-size:10px;outline:none}
-.toolbar input:focus{border-color:var(--ac);box-shadow:0 0 0 2px rgba(75,141,255,.1)}
-.toolbar .btn{padding:5px 10px;font-size:9px;font-weight:600;border-radius:4px;cursor:pointer;border:1px solid var(--bd);background:var(--cd);color:var(--dm);transition:all .12s}
-.toolbar .btn:hover{filter:brightness(1.12)}
-.toolbar .btn.active{background:rgba(75,141,255,.1);color:var(--ac);border-color:rgba(75,141,255,.25)}
-.btn-export{padding:6px 14px!important;background:rgba(45,212,160,.08)!important;border-color:rgba(45,212,160,.15)!important;color:var(--gn)!important}
-.btn-sync{padding:6px 12px!important}
-.btn-primary{padding:9px 20px!important;background:var(--ac)!important;border:none!important;color:#fff!important;border-radius:6px!important;font-size:11px!important}
+/* ── Dashboard ──────────────────────────────────────────── */
+.dashboard { padding: 20px 28px; }
 
-.table-wrap{background:var(--cd);border:1px solid var(--bd);border-radius:8px;overflow:hidden}
-.table-scroll{overflow-x:auto;max-height:calc(100vh - 310px);overflow-y:auto}
-table{width:100%;border-collapse:collapse}
-th{padding:8px 9px;text-align:left;background:var(--sf);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:2;font-size:8px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--dm);cursor:pointer;white-space:nowrap;user-select:none}
-th.sorted{color:var(--ac)}
-td{padding:6px 9px;font-size:11px;border-bottom:1px solid rgba(26,32,53,.03);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-tbody tr:hover td{background:var(--rs)}
-.td-po{max-width:240px}
-.td-style{font-weight:600}
-.td-dim{color:var(--dm)}
-.change-item{display:inline-block;margin-right:10px;font-size:10px;white-space:nowrap}
-.change-field{color:var(--dm)}
-.change-from{color:var(--rd);text-decoration:line-through;opacity:.6}
-.change-to{color:var(--gn);font-weight:600}
-.footer{padding:7px 12px;border-top:1px solid var(--bd);display:flex;justify-content:space-between;font-size:9px;color:var(--dm)}
+/* Stats */
+.stats { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.stat {
+  flex:1; min-width:160px; padding:18px 20px;
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  cursor:pointer; transition:all .15s; box-shadow:var(--shadow);
+  position:relative; overflow:hidden;
+}
+.stat:hover { box-shadow:var(--shadow-lg); transform:translateY(-1px); }
+.stat.active { border-color:var(--accent); }
+.stat .accent-bar { position:absolute; top:0; left:0; right:0; height:3px; border-radius:3px 3px 0 0; display:none; }
+.stat.active .accent-bar { display:block; }
+.stat .num { font-size:28px; font-weight:700; line-height:1; }
+.stat .label { font-size:12px; font-weight:600; color:var(--text); margin-top:8px; }
+.stat .sub { font-size:11px; color:var(--text-dim); margin-top:3px; }
 
-.empty{padding:70px 24px;text-align:center}
-.empty .icon{font-size:40px;opacity:.1;margin-bottom:14px}
-.empty .msg{font-size:12px;color:var(--dm);max-width:380px;margin:0 auto;line-height:1.8}
-.loading-bar{height:2px;background:var(--ac);animation:loading 1.5s ease infinite;position:fixed;top:0;left:0;z-index:100}
-@keyframes loading{0%{width:0}50%{width:60%}100%{width:100%;opacity:0}}
+/* Toolbar */
+.toolbar {
+  display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap;
+}
+.toolbar .search {
+  flex:1; min-width:200px; padding:9px 14px; padding-left:36px;
+  background:var(--card); border:1px solid var(--border); border-radius:8px;
+  color:var(--text); font-size:12px; outline:none; font-family:inherit;
+  box-shadow:var(--shadow); transition:border-color .15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238896b3' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:12px center;
+}
+.toolbar .search:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(53,99,233,.1); }
+.toolbar .filter-btn {
+  padding:7px 14px; font-size:11px; font-weight:600; border-radius:6px;
+  cursor:pointer; border:1px solid var(--border); background:var(--card);
+  color:var(--text-secondary); font-family:inherit; transition:all .12s;
+}
+.toolbar .filter-btn:hover { background:var(--bg); }
+.toolbar .filter-btn.active { background:var(--accent-light); color:var(--accent); border-color:var(--accent); }
+.toolbar .export-btn {
+  padding:7px 16px; border-radius:6px; border:1px solid var(--green-border);
+  background:var(--green-bg); color:var(--green); font-size:11px; font-weight:600;
+  cursor:pointer; font-family:inherit; text-decoration:none; transition:all .12s;
+}
+.toolbar .export-btn:hover { filter:brightness(.97); }
+
+/* Table */
+.table-container {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  overflow:hidden; box-shadow:var(--shadow);
+}
+.table-scroll { overflow-x:auto; max-height:calc(100vh - 320px); overflow-y:auto; }
+table { width:100%; border-collapse:collapse; }
+thead th {
+  padding:10px 14px; text-align:left; background:var(--bg);
+  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2;
+  font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  color:var(--text-dim); cursor:pointer; white-space:nowrap; user-select:none;
+}
+thead th:hover { color:var(--text-secondary); }
+thead th.sorted { color:var(--accent); }
+tbody td {
+  padding:10px 14px; font-size:12px; border-bottom:1px solid var(--border-light);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+tbody tr:hover td { background:#f8faff; }
+.td-po { max-width:260px; }
+.td-style { font-weight:600; }
+
+/* Badges */
+.badge-new {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700;
+  background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); letter-spacing:.3px;
+}
+.badge-upd {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700;
+  background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-border); letter-spacing:.3px;
+}
+.badge-miss {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700;
+  background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); letter-spacing:.3px;
+}
+
+/* Change pills */
+.change-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 10px; border-radius:6px; font-size:11px; margin-right:8px; margin-bottom:2px;
+  background:var(--bg); border:1px solid var(--border);
+}
+.change-pill .field { font-weight:600; color:var(--text-secondary); }
+.change-pill .old { color:var(--red); text-decoration:line-through; }
+.change-pill .arrow { color:var(--text-dim); }
+.change-pill .new { color:var(--green); font-weight:600; }
+.change-pill.units-up { background:#ecfdf5; border-color:#bbf7d0; }
+.change-pill.units-down { background:#fef2f2; border-color:#fecaca; }
+.change-pill.etd-change { background:#eff6ff; border-color:#bfdbfe; }
+
+.new-info { color:var(--green); font-size:11px; font-weight:500; }
+.miss-info { color:var(--red); font-size:11px; font-weight:500; }
+
+/* Footer */
+.table-footer {
+  padding:10px 14px; border-top:1px solid var(--border);
+  display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim);
+}
+
+/* Empty */
+.empty { padding:80px 28px; text-align:center; }
+.empty-icon { font-size:48px; opacity:.2; margin-bottom:16px; }
+.empty-msg { font-size:13px; color:var(--text-dim); max-width:400px; margin:0 auto; line-height:1.8; }
 </style>
 </head>
 <body>
-
-<div id="loading-bar" class="loading-bar" style="display:none"></div>
 
 <header>
   <div class="logo mono">P</div>
   <span class="title mono">PRODUCTION SYNC</span>
   <div class="right">
     <span id="status-badge"></span>
-    <button class="btn mono btn-sync" onclick="forceSync()">⟳ Sync Now</button>
+    <button class="btn-sync mono" onclick="forceSync()">⟳ Sync Now</button>
   </div>
 </header>
 
-<div id="content" style="padding:16px 24px">
+<div id="content">
   <div class="empty">
-    <div class="icon">⟳</div>
-    <div class="msg">Waiting for first sync from Dropbox...<br>The server syncs automatically on startup and every hour.</div>
+    <div class="empty-icon">⟳</div>
+    <div class="empty-msg">Waiting for first sync from Dropbox...<br>The server syncs automatically on startup and every hour.</div>
   </div>
 </div>
 
 <script>
-const C = {gn:"#2dd4a0",am:"#f5a623",rd:"#f0544f",ac:"#4b8dff",dm:"#4f5b78"};
-const stColor = {NEW:C.gn, UPD:C.am, MISS:C.rd};
 let currentView = "new";
 let currentFilter = "";
 let currentSrc = "ALL";
@@ -101,129 +208,149 @@ let sortKey = null;
 let sortAsc = true;
 let data = null;
 
-function badge(color, text, pulse) {
-  return `<span class="badge mono" style="background:${color}12;color:${color};border:1px solid ${color}25">${pulse ? `<span class="dot" style="background:${color}"></span>` : ""}${text}</span>`;
-}
-
 async function fetchStatus() {
   try {
     const res = await fetch("/api/status");
     const s = await res.json();
     data = s;
     updateUI(s);
-  } catch(e) {
-    console.error("Fetch error:", e);
-  }
+  } catch(e) { console.error("Fetch error:", e); }
 }
 
 async function forceSync() {
-  document.getElementById("loading-bar").style.display = "block";
+  document.getElementById("status-badge").innerHTML = '<span class="status"><span class="dot" style="background:#fbbf24"></span>Syncing...</span>';
   try {
     await fetch("/api/sync", {method:"POST"});
-    // Poll until done
     const poll = setInterval(async () => {
       const res = await fetch("/api/status");
       const s = await res.json();
       data = s;
-      if (!s.syncing) {
-        clearInterval(poll);
-        document.getElementById("loading-bar").style.display = "none";
-        updateUI(s);
-      }
+      if (!s.syncing) { clearInterval(poll); updateUI(s); }
     }, 2000);
   } catch(e) { console.error(e); }
 }
 
 function updateUI(s) {
-  // Status badge
   const sb = document.getElementById("status-badge");
-  if (s.syncing) sb.innerHTML = badge(C.ac, "Syncing...", true);
-  else if (s.error) sb.innerHTML = badge(C.rd, "Error");
-  else if (s.lastSync) {
-    const t = new Date(s.lastSync).toLocaleTimeString();
-    sb.innerHTML = badge(C.gn, `Synced ${t}`, true);
+  if (s.syncing) {
+    sb.innerHTML = '<span class="status"><span class="dot" style="background:#fbbf24"></span>Syncing...</span>';
+  } else if (s.error) {
+    sb.innerHTML = '<span class="status" style="background:rgba(239,68,68,.15);color:#fca5a5">Error</span>';
+  } else if (s.lastSync) {
+    const t = new Date(s.lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    sb.innerHTML = `<span class="status"><span class="dot"></span>Synced ${t}</span>`;
   }
-
   if (!s.analysis) return;
-  const a = s.analysis;
-  renderDashboard(a, s);
+  renderDashboard(s.analysis, s);
 }
 
 function renderDashboard(a, s) {
   const el = document.getElementById("content");
-  const stats = [
-    {k:"new", v:a.newStyles.length, l:"New Styles", c:C.gn, sub:`ETD after ${a.cutoffDate}`},
-    {k:"upd", v:a.updates.length, l:"Updates", c:C.am, sub:"Changed vs your ledger"},
-    {k:"miss", v:a.missing.length, l:"Only in Yours", c:C.rd, sub:"Not in factory files"},
-    {k:"all", v:a.newStyles.length+a.updates.length, l:"Action Items", c:C.ac, sub:`${a.matched} matched · ${a.ignoredOld} old filtered`},
-  ];
-
   const sources = ["ALL"];
   if (s.factoryCounts.FY1) sources.push("FY1");
   if (s.factoryCounts.NB) sources.push("NB");
   if (s.factoryCounts.PC) sources.push("PC");
 
-  let html = `<div class="stats">${stats.map(st =>
-    `<div class="stat ${currentView===st.k?"active":""}" style="--stat-color:${st.c}" onclick="setView('${st.k}')">
-      <div class="bar" style="background:${st.c}"></div>
+  const stats = [
+    {k:"new", v:a.newStyles.length, l:"New Styles", c:"var(--green)", sub:"Not yet on Style Ledger for David"},
+    {k:"upd", v:a.updates.length, l:"Changes Detected", c:"var(--amber)", sub:"Units, ETD, or Prod# changed"},
+    {k:"miss", v:a.missing.length, l:"Only on David's", c:"var(--red)", sub:"Not found in factory files"},
+    {k:"all", v:a.newStyles.length+a.updates.length, l:"All Action Items", c:"var(--accent)", sub:`${a.matched} matched · ${a.ignoredOld} old filtered`},
+  ];
+
+  let html = `<div class="dashboard">`;
+  html += `<div class="stats">${stats.map(st =>
+    `<div class="stat ${currentView===st.k?"active":""}" onclick="setView('${st.k}')">
+      <div class="accent-bar" style="background:${st.c}"></div>
       <div class="num mono" style="color:${st.c}">${st.v}</div>
       <div class="label">${st.l}</div>
       <div class="sub">${st.sub}</div>
     </div>`
   ).join("")}</div>`;
 
-  html += `<div class="toolbar mono">
-    <input value="${esc(currentFilter)}" oninput="setFilter(this.value)" placeholder="Search style, PO, prod#...">
-    ${sources.map(sr => `<button class="btn ${currentSrc===sr?"active":""}" onclick="setSrc('${sr}')">${sr}</button>`).join("")}
-    <a href="/api/export" class="btn btn-export" style="text-decoration:none">↓ Export .xlsx</a>
-    <button class="btn btn-sync" onclick="forceSync()">⟳</button>
+  html += `<div class="toolbar">
+    <input class="search" value="${esc(currentFilter)}" oninput="setFilter(this.value)" placeholder="Search style, PO name, production #...">
+    ${sources.map(sr => `<button class="filter-btn mono ${currentSrc===sr?"active":""}" onclick="setSrc('${sr}')">${sr}</button>`).join("")}
+    <a href="/api/export" class="export-btn mono">↓ Export .xlsx</a>
   </div>`;
 
-  // Build rows
   let rows = getRows(a);
   const total = rows.length;
 
-  html += `<div class="table-wrap"><div class="table-scroll"><table>
+  html += `<div class="table-container"><div class="table-scroll"><table>
     <thead><tr>
-      ${["_st:Status:62","factory:Src:42","prod:Prod#:92","po:PO Name:240","style:Style:130","units:Units:68","brand:Brand:50","etd:ETD:88"].map(c => {
-        const [k,l,w] = c.split(":");
-        const sorted = sortKey===k;
-        return `<th class="${sorted?"sorted":""}" style="min-width:${w}px" onclick="setSort('${k}')">${l}${sorted?(sortAsc?" ↑":" ↓"):""}</th>`;
-      }).join("")}
-      <th style="min-width:170px">Changes</th>
+      ${[
+        {k:"_st",l:"Status",w:80},
+        {k:"factory",l:"Factory",w:60},
+        {k:"prod",l:"Prod #",w:100},
+        {k:"po",l:"PO Name",w:260},
+        {k:"style",l:"Style",w:140},
+        {k:"units",l:"Units",w:80},
+        {k:"brand",l:"Brand",w:60},
+        {k:"etd",l:"ETD",w:100},
+      ].map(c =>
+        `<th class="${sortKey===c.k?"sorted":""}" style="min-width:${c.w}px" onclick="setSort('${c.k}')">${c.l}${sortKey===c.k?(sortAsc?" ↑":" ↓"):""}</th>`
+      ).join("")}
+      <th style="min-width:200px">What Changed</th>
     </tr></thead>
     <tbody>`;
 
   if (!rows.length) {
-    html += `<tr><td colspan="9" style="padding:48px;text-align:center;color:var(--dm);font-size:11px" class="mono">No items</td></tr>`;
+    html += `<tr><td colspan="9" style="padding:56px;text-align:center;color:var(--text-dim);font-size:12px">No items to display</td></tr>`;
   }
 
   rows.forEach(r => {
-    const sc2 = stColor[r._st] || C.dm;
+    const badgeClass = r._st === "NEW" ? "badge-new" : r._st === "UPD" ? "badge-upd" : "badge-miss";
+    const label = r._st === "NEW" ? "New" : r._st === "UPD" ? "Changed" : "Missing";
+
     html += `<tr>
-      <td>${badge(sc2, r._st)}</td>
-      <td class="mono td-dim">${r.factory||"—"}</td>
-      <td class="mono">${esc(r.prod)}</td>
+      <td><span class="${badgeClass}">${label}</span></td>
+      <td class="mono" style="color:var(--text-secondary);font-size:11px">${esc(r.factory)||"—"}</td>
+      <td class="mono" style="font-size:11px">${esc(r.prod)}</td>
       <td class="td-po">${esc(r.po)}</td>
       <td class="mono td-style">${esc(r.style)}</td>
-      <td>${r.units!=null?r.units.toLocaleString():"—"}</td>
+      <td class="mono">${r.units!=null?r.units.toLocaleString():"—"}</td>
       <td>${esc(r.brand)||"—"}</td>
-      <td class="mono">${r.etd||"—"}</td>
-      <td>${r.changes ? r.changes.map(c =>
-        `<span class="change-item"><span class="change-field">${c.field}: </span><span class="change-from">${esc(String(c.from))}</span> → <span class="change-to">${esc(String(c.to))}</span></span>`
-      ).join("") : r._st==="NEW" ? `<span style="color:${C.gn};font-size:10px">New — ETD ${r.etd}</span>` : r._st==="MISS" ? `<span style="color:${C.rd};font-size:10px">In your ledger only</span>` : ""}</td>
+      <td class="mono" style="font-size:11px">${r.etd||"—"}</td>
+      <td>${renderChanges(r)}</td>
     </tr>`;
   });
 
   html += `</tbody></table></div>
-    <div class="footer mono">
+    <div class="table-footer mono">
       <span>${total} rows</span>
-      <span>FY1:${s.factoryCounts.FY1||0} NB:${s.factoryCounts.NB||0} PC:${s.factoryCounts.PC||0}
-        <span style="color:var(--pr)">Yours:${s.davidCount}</span>
-        (${a.ignoredOld} old filtered)</span>
+      <span>FY1: ${s.factoryCounts.FY1||0} &nbsp;·&nbsp; NB: ${s.factoryCounts.NB||0} &nbsp;·&nbsp; PC: ${s.factoryCounts.PC||0} &nbsp;·&nbsp; <b>David's: ${s.davidCount}</b> &nbsp;·&nbsp; ${a.ignoredOld} old filtered</span>
     </div></div>`;
-
+  html += `</div>`;
   el.innerHTML = html;
+}
+
+function renderChanges(r) {
+  if (r.changes && r.changes.length) {
+    return r.changes.map(c => {
+      let cls = "change-pill";
+      if (c.field === "Units") {
+        cls += c.delta > 0 ? " units-up" : " units-down";
+      } else if (c.field === "ETD") {
+        cls = "change-pill etd-change";
+      } else if (c.field === "Prod#") {
+        cls = "change-pill etd-change";
+      }
+      return `<span class="${cls}">
+        <span class="field">${c.field}:</span>
+        <span class="old">${esc(String(c.from))}</span>
+        <span class="arrow">→</span>
+        <span class="new">${esc(String(c.to))}</span>
+      </span>`;
+    }).join("");
+  }
+  if (r._st === "NEW") {
+    return `<span class="new-info">New style — not on Style Ledger for David</span>`;
+  }
+  if (r._st === "MISS") {
+    return `<span class="miss-info">On Style Ledger for David but not in any factory file</span>`;
+  }
+  return "";
 }
 
 function getRows(a) {
@@ -255,7 +382,6 @@ function setSrc(v) { currentSrc = v; if (data) renderDashboard(data.analysis, da
 function setSort(k) { if (sortKey===k) sortAsc=!sortAsc; else { sortKey=k; sortAsc=true; } if (data) renderDashboard(data.analysis, data); }
 function esc(s) { if (!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-// Poll every 30s
 fetchStatus();
 setInterval(fetchStatus, 30000);
 </script>
