@@ -249,6 +249,7 @@ function cleanRow(f, style) {
     brand: normBrand(f["Brand"]),
     etd: fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]),
     factory: f._factory,
+  };
 }
 
 // ─── Sync Orchestrator ───────────────────────────────────────────────────────
