@@ -101,10 +101,9 @@ async function dropboxDownload(filePath) {
 
 // ─── Parsing ─────────────────────────────────────────────────────────────────
 
-function findTab(wb, key) {
-  const pref = FACTORY_TABS[key] || [];
-  for (const t of pref) { if (wb.SheetNames.includes(t)) return t; }
-  return wb.SheetNames.find(s => s.toLowerCase().includes("style") && s.toLowerCase().includes("ledger"));
+function findAllTabs(wb) {
+  // Return ALL tabs that look like style ledgers
+  return wb.SheetNames.filter(s => s.toLowerCase().includes("style") && s.toLowerCase().includes("ledger"));
 }
 
 function sheetToRows(wb, tabName, factory) {
@@ -123,8 +122,21 @@ function sheetToRows(wb, tabName, factory) {
 
 function parseFactory(buf, key) {
   const wb = XLSX.read(buf);
-  const tab = findTab(wb, key);
-  return tab ? sheetToRows(wb, tab, key) : [];
+  const tabs = findAllTabs(wb);
+  const allRows = [];
+  const seen = new Set();
+  tabs.forEach(tab => {
+    const rows = sheetToRows(wb, tab, key);
+    rows.forEach(r => {
+      const sty = (r["STYLE"] || "").toString().trim();
+      if (sty && !seen.has(sty)) {
+        seen.add(sty);
+        allRows.push(r);
+      }
+    });
+  });
+  log(`  ${key}: read ${tabs.length} tabs (${tabs.join(", ")}), ${allRows.length} unique styles`);
+  return allRows;
 }
 
 function parseDavid(buf) {
@@ -186,8 +198,8 @@ function runAnalysis(factoryRows, davidRows) {
   Object.entries(factoryMap).forEach(([style, fRows]) => {
     const f = fRows[0], d = davidMap[style];
     if (!d) {
-      const etd = toDate(f["ETD"] || f["EX-FACTORY.DATE"]);
-      if (etd && etd > cutoff) newStyles.push(cleanRow(f, style));
+      const shipDate = toDate(f["ATD"]) || toDate(f["ETD"] || f["EX-FACTORY.DATE"]);
+      if (shipDate && shipDate > cutoff) newStyles.push(cleanRow(f, style));
       else ignoredOld.push(style);
       return;
     }
@@ -199,7 +211,7 @@ function runAnalysis(factoryRows, davidRows) {
     const dU = num(d["Ship Units"]);
     if (fU != null && dU != null && fU !== dU) changes.push({ field: "Units", from: dU.toLocaleString(), to: fU.toLocaleString(), delta: fU - dU });
 
-    const fE = fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]);
+    const fE = fmtDate(f["ATD"]) || fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]);
     const dE = fmtDate(d["ETD"]);
     if (fE && dE && fE !== dE) changes.push({ field: "ETD", from: dE, to: fE });
 
@@ -240,6 +252,11 @@ function runAnalysis(factoryRows, davidRows) {
   };
 }
 
+function bestDate(f) {
+  // ATD (actual ship date) takes priority over ETD
+  return fmtDate(f["ATD"]) || fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]);
+}
+
 function cleanRow(f, style) {
   return {
     prod: (f["Production#"] || "").toString(),
@@ -247,7 +264,7 @@ function cleanRow(f, style) {
     style,
     units: num(f["Ship Units"]) ?? num(f["PO Units"]),
     brand: normBrand(f["Brand"]),
-    etd: fmtDate(f["ETD"] || f["EX-FACTORY.DATE"]),
+    etd: bestDate(f),
     factory: f._factory,
   };
 }
