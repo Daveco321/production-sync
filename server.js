@@ -160,6 +160,13 @@ function fmtDate(v) {
   return d ? d.toISOString().slice(0, 10) : "";
 }
 
+function bestUnits(row) {
+  // Ship Units takes priority when it's a real positive number
+  const ship = num(row["Ship Units"]);
+  if (ship != null && ship > 0) return ship;
+  return num(row["PO Units"]);
+}
+
 function num(v) {
   return v == null || v === "" || isNaN(Number(v)) ? null : Number(v);
 }
@@ -217,7 +224,7 @@ function runAnalysis(factoryRows, davidRows) {
     const changes = [];
 
     // Only track changes where BOTH sides have real values (not empty→filled)
-    const fU = num(f["Ship Units"]) ?? num(f["PO Units"]);
+    const fU = bestUnits(f);
     const dU = num(d["Ship Units"]);
     if (fU != null && dU != null && fU !== dU) changes.push({ field: "Units", from: dU.toLocaleString(), to: fU.toLocaleString(), delta: fU - dU });
 
@@ -272,7 +279,7 @@ function cleanRow(f, style) {
     prod: (f["Production#"] || "").toString(),
     po: (f["PO NAME"] || "").toString(),
     style,
-    units: num(f["Ship Units"]) ?? num(f["PO Units"]),
+    units: bestUnits(f),
     brand: normBrand(f["Brand"]),
     etd: bestDate(f),
     factory: f._factory,
