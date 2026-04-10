@@ -198,8 +198,18 @@ function runAnalysis(factoryRows, davidRows) {
   Object.entries(factoryMap).forEach(([style, fRows]) => {
     const f = fRows[0], d = davidMap[style];
     if (!d) {
-      const shipDate = toDate(f["ATD"]) || toDate(f["ETD"] || f["EX-FACTORY.DATE"]);
-      if (shipDate && shipDate > cutoff) newStyles.push(cleanRow(f, style));
+      const atd = toDate(f["ATD"]);
+      const etd = toDate(f["ETD"] || f["EX-FACTORY.DATE"]);
+
+      // If ATD exists: hide if ATD + 45 days has passed (already shipped & arrived)
+      if (atd) {
+        const atdExpiry = new Date(atd.getTime() + 45 * 86400000);
+        if (atdExpiry < now) { ignoredOld.push(style); return; }
+        newStyles.push(cleanRow(f, style));
+        return;
+      }
+      // No ATD: use ETD with standard cutoff
+      if (etd && etd > cutoff) newStyles.push(cleanRow(f, style));
       else ignoredOld.push(style);
       return;
     }
