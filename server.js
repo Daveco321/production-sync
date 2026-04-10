@@ -332,6 +332,21 @@ app.get("/api/export", (req, res) => {
 });
 
 // Serve frontend for all other routes
+app.get("/api/debug/list-folder", async (req, res) => {
+  try {
+    const token = await getAccessToken();
+    const folder = req.query.path || "/Production_Style_Ledger";
+    const r = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ path: folder }),
+    });
+    const data = await r.json();
+    const files = (data.entries || []).map(e => ({ name: e.name, path: e.path_display, type: e[".tag"] }));
+    res.json({ folder, files });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
