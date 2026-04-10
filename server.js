@@ -331,6 +331,84 @@ app.get("/api/export", (req, res) => {
 });
 
 // Serve frontend for all other routes
+app.post("/api/add-to-david", async (req, res) => {
+  const { styles } = req.body;
+  if (!styles || !styles.length) return res.status(400).json({ error: "No styles provided" });
+  if (!state.analysis) return res.status(400).json({ error: "No data — sync first" });
+
+  try {
+    const token = await getAccessToken();
+    log(`Adding ${styles.length} styles to Style Ledger for David...`);
+
+    // Download current David file
+    const dlRes = await fetch("https://content.dropboxapi.com/2/files/download", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Dropbox-API-Arg": JSON.stringify({ path: PATHS.DAVID }) },
+    });
+    if (!dlRes.ok) throw new Error(`Download failed: ${dlRes.status}`);
+    const buf = Buffer.from(await dlRes.arrayBuffer());
+    const wb = XLSX.read(buf);
+
+    // Find the style ledger tab
+    const tabName = wb.SheetNames.find(s => s.toLowerCase().includes("style") && s.toLowerCase().includes("ledger"));
+    if (!tabName) throw new Error("Could not find Style Ledger tab in David's file");
+    const ws = wb.Sheets[tabName];
+
+    // Get current range to find last row
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    let nextRow = range.e.r + 1;
+
+    // Build a set of requested styles from analysis data
+    const newMap = {};
+    state.analysis.newStyles.forEach(r => { newMap[r.style] = r; });
+
+    let added = 0;
+    styles.forEach(sty => {
+      const r = newMap[sty];
+      if (!r) return;
+      // David's columns: A=Production#, B=PO NAME, C=STYLE, D=Ship Units, E=Brand, F=ETD
+      ws[XLSX.utils.encode_cell({ r: nextRow, c: 0 })] = { t: "s", v: r.prod || "" };
+      ws[XLSX.utils.encode_cell({ r: nextRow, c: 1 })] = { t: "s", v: r.po || "" };
+      ws[XLSX.utils.encode_cell({ r: nextRow, c: 2 })] = { t: "s", v: r.style || "" };
+      ws[XLSX.utils.encode_cell({ r: nextRow, c: 3 })] = { t: "n", v: r.units || 0 };
+      ws[XLSX.utils.encode_cell({ r: nextRow, c: 4 })] = { t: "s", v: r.brand || "" };
+      if (r.etd) {
+        const d = new Date(r.etd + "T00:00:00");
+        ws[XLSX.utils.encode_cell({ r: nextRow, c: 5 })] = { t: "d", v: d };
+      }
+      nextRow++;
+      added++;
+    });
+
+    // Update range
+    range.e.r = nextRow - 1;
+    ws["!ref"] = XLSX.utils.encode_range(range);
+
+    // Write and upload back to Dropbox
+    const outBuf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const upRes = await fetch("https://content.dropboxapi.com/2/files/upload", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Dropbox-API-Arg": JSON.stringify({ path: PATHS.DAVID, mode: "overwrite", mute: true }),
+        "Content-Type": "application/octet-stream",
+      },
+      body: outBuf,
+    });
+    if (!upRes.ok) throw new Error(`Upload failed: ${upRes.status} ${await upRes.text()}`);
+
+    log(`✓ Added ${added} styles to Style Ledger for David`, "ok");
+
+    // Re-sync to refresh data
+    doSync("post-add");
+
+    res.json({ ok: true, added });
+  } catch (e) {
+    log(`✗ Add failed: ${e.message}`, "error");
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get("/api/debug/list-folder", async (req, res) => {
   try {
     const token = await getAccessToken();
